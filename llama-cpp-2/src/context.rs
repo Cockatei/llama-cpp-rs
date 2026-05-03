@@ -52,6 +52,26 @@ impl<'model> LlamaContext<'model> {
         }
     }
 
+    /// Returns the raw `*mut llama_context` pointer for FFI use cases that are not yet
+    /// covered by safe wrappers in this crate (for example
+    /// [`llama_cpp_sys_2::llama_set_abort_callback`]).
+    ///
+    /// # Safety
+    ///
+    /// Callers must:
+    /// - not free the returned context (it is owned by `self`),
+    /// - ensure that `self` outlives any FFI use of the pointer,
+    /// - not violate aliasing invariants by handing the pointer to threads that mutate
+    ///   the context concurrently with safe API calls on `self`.
+    ///
+    /// For typical "set static-lived callback once at construction" use cases, passing the
+    /// pointer to a C function and letting the C side store it for the lifetime of the
+    /// context is safe.
+    #[must_use]
+    pub fn context_ptr(&self) -> *mut llama_cpp_sys_2::llama_context {
+        self.context.as_ptr()
+    }
+
     /// Gets the max number of logical tokens that can be submitted to decode. Must be greater than or equal to [`Self::n_ubatch`].
     #[must_use]
     pub fn n_batch(&self) -> u32 {
